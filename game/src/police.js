@@ -1,149 +1,172 @@
-// Wanted heat + Marisol Sheriff pursuit: crimes feed a heat meter that crystallises into
-// 0–5 stars; hiding from every cop's line of sight decays it. Interceptors steer to an
-// intercept point ahead of the player, lightbars strobe red/blue, at 3+ stars a Condor
-// helicopter pins a searchlight cone on the player, at 4+ stars a roadblock of parked
-// Interceptors waits on the player's road ahead.
+// CORAL CITY HEAT — police.js: the Marisol Sheriff. A heat value under a 0-5 star readout,
+// interceptor cruisers that steer for a predicted intercept point through the same arcade
+// physics the player drives with, strobing lightbars, roadblocks at four stars, and the
+// Condor helicopter — a capsule-fuselage aircraft that orbits the player from three stars
+// and pins them in a volumetric searchlight cone with a real spotlight and ground pool.
 import * as THREE from 'three';
 import { TUNING } from './config.js';
-import { createVehicle } from './vehicles.js';
+import { createVehicle, updateVehicleArcadePhysics } from './vehicles.js';
 
-export function createWantedState() {
-  return { stars: 0, heat: 0, seenTimer: 0, hiddenTimer: 0, crimes: [] };
-}
+export function createWantedState() { return { stars: 0, heat: 0, seenTimer: 0 }; }
 
 export function updateWantedHeatSystem(wanted, events, dt) {
-  for (const ev of events) {
-    const gain = TUNING.wantedPerCrime[ev];
-    if (gain) wanted.heat += gain;
-    if (ev === 'missionCrime') wanted.heat += 1.05;
+  for (const e of events) {
+    const w = TUNING.wantedPerCrime[e];
+    if (w) wanted.heat += w;
+    else if (e === 'missionCrime') wanted.heat += 1.05;
   }
-  wanted.stars = Math.max(wanted.stars, Math.min(5, Math.floor(wanted.heat)));
-  if (wanted.stars > 0) {
-    if (wanted.seenTimer > 0) { wanted.seenTimer -= dt; wanted.hiddenTimer = 0; }
-    else {
-      wanted.hiddenTimer += dt;
-      if (wanted.hiddenTimer > TUNING.wantedDecaySeconds / Math.max(1, wanted.stars)) {
-        wanted.heat = Math.max(0, wanted.stars - 1 + 0.001); wanted.stars = Math.max(0, wanted.stars - 1);
-        wanted.hiddenTimer = 0;
-      }
+  if (wanted.seenTimer > 0) wanted.seenTimer -= dt;
+  else wanted.heat = Math.max(0, wanted.heat - dt * 0.042); // ~one star per 24 s unseen
+  wanted.stars = Math.min(5, Math.floor(wanted.heat + 0.0001));
+}
+
+export function updateStrobes(mesh, t) {
+  const s = mesh.userData.strobe; if (!s) return;
+  const ph = Math.sin(t * 10 + (s.phase || 0));
+  s.red.emissiveIntensity = ph > 0 ? 5.5 : 0.12;
+  s.blue.emissiveIntensity = ph > 0 ? 0.12 : 5.5;
+  s.redGlow.opacity = ph > 0 ? 0.85 : 0.0;
+  s.blueGlow.opacity = ph > 0 ? 0.0 : 0.85;
+}
+
+function buildCondor(scene) {
+  const heli = new THREE.Group();
+  const paint = new THREE.MeshStandardMaterial({ color: 0xf2f4f6, roughness: 0.32, metalness: 0.55, envMapIntensity: 0.9 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x1c2126, roughness: 0.5, metalness: 0.5 });
+  const fus = new THREE.Mesh(new THREE.CapsuleGeometry(0.88, 2.6, 6, 12), paint);
+  fus.rotation.x = Math.PI / 2; fus.castShadow = true; heli.add(fus);
+  const stripe = new THREE.Mesh(new THREE.CapsuleGeometry(0.9, 1.1, 4, 12), dark);
+  stripe.rotation.x = Math.PI / 2; stripe.position.z = -0.4; stripe.scale.set(1, 1, 0.55); heli.add(stripe);
+  const cockpit = new THREE.Mesh(new THREE.SphereGeometry(0.8, 14, 10), new THREE.MeshPhysicalMaterial({ color: 0x10151f, metalness: 0.9, roughness: 0.08, envMapIntensity: 1.6 }));
+  cockpit.scale.set(0.92, 0.78, 0.95); cockpit.position.set(0, 0.12, 1.55); heli.add(cockpit);
+  const boom = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.36, 3.8, 10), paint);
+  boom.rotation.x = Math.PI / 2 - 0.06; boom.position.set(0, 0.18, -3.1); heli.add(boom);
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(0.09, 1.05, 0.55), dark);
+  fin.position.set(0, 0.55, -4.85); heli.add(fin);
+  const tailDisc = new THREE.Mesh(new THREE.CircleGeometry(0.42, 14), new THREE.MeshBasicMaterial({ color: 0x222222, transparent: true, opacity: 0.4, side: THREE.DoubleSide }));
+  tailDisc.position.set(0.1, 0.55, -4.85); tailDisc.rotation.y = Math.PI / 2; heli.add(tailDisc);
+  for (const e of [-1, 1]) {
+    const skid = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.1, 6), dark);
+    skid.rotation.x = Math.PI / 2; skid.position.set(e * 0.78, -1.02, 0.15); heli.add(skid);
+    for (const sz of [-0.9, 1.1]) {
+      const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.75, 6), dark);
+      strut.position.set(e * 0.72, -0.68, sz); strut.rotation.z = e * 0.35; heli.add(strut);
     }
   }
-  return wanted;
+  const rotor = new THREE.Group(); rotor.position.y = 1.12; heli.add(rotor);
+  for (const a of [0, Math.PI / 2]) {
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(6.4, 0.035, 0.3), dark);
+    blade.rotation.y = a; rotor.add(blade);
+  }
+  const blur = new THREE.Mesh(new THREE.CircleGeometry(3.25, 24), new THREE.MeshBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.13, side: THREE.DoubleSide, depthWrite: false }));
+  blur.rotation.x = -Math.PI / 2; blur.position.y = 0.03; rotor.add(blur);
+  // searchlight: additive cone (apex at the heli) + real spotlight + ground pool
+  const coneGeo = new THREE.CylinderGeometry(0.55, 10.5, 58, 18, 1, true);
+  coneGeo.translate(0, -29, 0);
+  const cone = new THREE.Mesh(coneGeo, new THREE.MeshBasicMaterial({ color: 0xfff3cf, transparent: true, opacity: 0.14, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+  cone.visible = false; scene.add(cone);
+  const spot = new THREE.SpotLight(0xffe9b8, 0, 240, 0.3, 0.7, 1.1);
+  scene.add(spot); scene.add(spot.target);
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(8.6, 22), new THREE.MeshBasicMaterial({ color: 0xfff3cf, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+  pool.rotation.x = -Math.PI / 2; pool.visible = false; scene.add(pool);
+  heli.visible = false;
+  heli.userData = { rotor, cone, spot, pool, t: 0 };
+  scene.add(heli);
+  return heli;
+}
+const _dir = new THREE.Vector3(), _tgt = new THREE.Vector3(), _up = new THREE.Vector3(0, -1, 0);
+export function setHeliBeam(heli, tx, tz, on) {
+  const u = heli.userData;
+  u.cone.visible = on; u.pool.visible = on;
+  u.spot.intensity = on ? 900 : 0;
+  if (!on) return;
+  _tgt.set(tx, 0, tz);
+  _dir.copy(_tgt).sub(heli.position).normalize();
+  u.cone.position.copy(heli.position);
+  u.cone.quaternion.setFromUnitVectors(_up, _dir);
+  u.spot.position.copy(heli.position);
+  u.spot.target.position.copy(_tgt);
+  u.pool.position.set(tx, 0.07, tz);
+  u.pool.material.opacity = 0.32;
+}
+export function stageHeli(heli, x, y, z, tx, tz) {
+  heli.visible = true;
+  heli.position.set(x, y, z);
+  heli.lookAt(tx, 0, tz);
+  heli.userData.rotor.rotation.y = 0.7;
+  setHeliBeam(heli, tx, tz, true);
 }
 
 export function createPoliceFleet(scene) {
-  const heliGroup = new THREE.Group();
-  const bodyMat = new THREE.MeshLambertMaterial({ color: 0xf0f2f5 });
-  const darkMat = new THREE.MeshLambertMaterial({ color: 0x22242a });
-  // rounded fuselage: a capsule laid along z, glass cockpit bubble, tapered tail boom, skids
-  const fuselage = new THREE.Mesh(new THREE.CapsuleGeometry(1.05, 3.4, 4, 10), bodyMat);
-  fuselage.rotation.x = Math.PI / 2; fuselage.castShadow = true; heliGroup.add(fuselage);
-  const cockpit = new THREE.Mesh(new THREE.SphereGeometry(0.92, 10, 8),
-    new THREE.MeshStandardMaterial({ color: 0x18242f, roughness: 0.12, metalness: 0.8 }));
-  cockpit.scale.set(0.92, 0.78, 1.05); cockpit.position.set(0, 0.22, 2.35); heliGroup.add(cockpit);
-  const boomGeo = new THREE.CylinderGeometry(0.15, 0.36, 5.4, 8); boomGeo.rotateX(Math.PI / 2);
-  const boom = new THREE.Mesh(boomGeo, bodyMat); boom.position.set(0, 0.28, -4.6); heliGroup.add(boom);
-  const fin = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.15, 0.8), darkMat); fin.position.set(0, 0.75, -7.1); heliGroup.add(fin);
-  const tailRotor = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.5, 0.16), darkMat); tailRotor.position.set(0.14, 0.75, -7.1); heliGroup.add(tailRotor);
-  for (const s of [-1, 1]) {
-    const skidGeo = new THREE.CylinderGeometry(0.06, 0.06, 4.6, 6); skidGeo.rotateX(Math.PI / 2);
-    const skid = new THREE.Mesh(skidGeo, darkMat); skid.position.set(s * 0.88, -1.32, 0.2); heliGroup.add(skid);
-    for (const zz of [-1.2, 1.4]) {
-      const strut = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.85, 0.09), darkMat);
-      strut.position.set(s * 0.62, -0.95, zz); strut.rotation.z = s * 0.5; heliGroup.add(strut);
-    }
-  }
-  const stripe = new THREE.Mesh(new THREE.CylinderGeometry(1.07, 1.07, 0.55, 12, 1, true),
-    new THREE.MeshLambertMaterial({ color: 0x1c2f52, side: THREE.DoubleSide }));
-  stripe.rotation.x = Math.PI / 2; stripe.position.z = -0.4; heliGroup.add(stripe);
-  const rotorGeo = new THREE.BoxGeometry(11, 0.08, 0.7);
-  const rotor = new THREE.Mesh(rotorGeo, darkMat); rotor.position.y = 1.3; heliGroup.add(rotor);
-  // searchlight: cone with a soft alpha gradient (bright at the lamp, dissolving at the
-  // street) over a bright pool disc that rides on the ground beneath the helicopter
-  const gradC = document.createElement('canvas'); gradC.width = 1; gradC.height = 64;
-  const gg = gradC.getContext('2d'); const grad = gg.createLinearGradient(0, 0, 0, 64);
-  grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.55, '#8a8a8a'); grad.addColorStop(1, '#101010');
-  gg.fillStyle = grad; gg.fillRect(0, 0, 1, 64);
-  const coneMat = new THREE.MeshBasicMaterial({ color: 0xfff3b0, transparent: true, opacity: 0.34, alphaMap: new THREE.CanvasTexture(gradC), blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
-  const cone = new THREE.Mesh(new THREE.ConeGeometry(11, 46, 20, 1, true), coneMat);
-  cone.position.y = -23.8; heliGroup.add(cone);
-  const poolC = document.createElement('canvas'); poolC.width = poolC.height = 128;
-  const pg = poolC.getContext('2d'); const pgrad = pg.createRadialGradient(64, 64, 4, 64, 64, 62);
-  pgrad.addColorStop(0, 'rgba(255,244,190,0.85)'); pgrad.addColorStop(0.6, 'rgba(255,240,170,0.35)'); pgrad.addColorStop(1, 'rgba(255,240,170,0)');
-  pg.fillStyle = pgrad; pg.fillRect(0, 0, 128, 128);
-  const pool = new THREE.Mesh(new THREE.CircleGeometry(11.5, 24),
-    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(poolC), transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
-  pool.rotation.x = -Math.PI / 2; pool.position.y = -43.6; heliGroup.add(pool);
-  const spot = new THREE.SpotLight(0xfff3b0, 0, 90, 0.42, 0.5, 0.6);
-  spot.position.set(0, 0, 0); heliGroup.add(spot); heliGroup.add(spot.target);
-  spot.target.position.set(0, -46, 0);
-  heliGroup.visible = false; scene.add(heliGroup);
-  return {
-    cops: [], heli: { mesh: heliGroup, rotor, cone, spot, angle: 0 },
-    roadblock: [], roadblockFor: -1,
-    ensureCount(sceneRef, world, count, playerPos) {
-      while (this.cops.length < count) {
-        const a = Math.random() * Math.PI * 2, d = 85 + Math.random() * 30;
-        const x = Math.max(-540, Math.min(1100, playerPos.x + Math.sin(a) * d));
-        const z = Math.max(-540, Math.min(540, playerPos.z + Math.cos(a) * d));
-        const cop = createVehicle(sceneRef, 'interceptor', x, z, a, 0xf0f2f5);
-        cop.isCop = true; this.cops.push(cop);
+  const fleet = {
+    cops: [], roadblock: [], roadblockFor: -1, heli: buildCondor(scene), world: null,
+    ensureCount(sc, world, n, pos) {
+      fleet.world = world;
+      while (fleet.cops.length < n) {
+        const a = Math.random() * Math.PI * 2, d = 95 + Math.random() * 55;
+        let x = pos.x + Math.sin(a) * d, z = pos.z + Math.cos(a) * d;
+        if (world) { const r = world.resolve(x, z, 2.2); x = r[0]; z = r[1]; }
+        const cop = createVehicle(sc, 'interceptor', x, z, Math.atan2(pos.x - x, pos.z - z), 0xf2f4f6);
+        cop.isCop = true;
+        fleet.cops.push(cop);
       }
-      while (this.cops.length > count) { const c = this.cops.pop(); sceneRef.remove(c.mesh); }
+      while (fleet.cops.length > n) {
+        let far = 0, fd = -1;
+        fleet.cops.forEach((c, i) => { const d = c.mesh.position.distanceTo(pos); if (d > fd) { fd = d; far = i; } });
+        sc.remove(fleet.cops[far].mesh);
+        fleet.cops.splice(far, 1);
+      }
     },
-    clearRoadblock(sceneRef) {
-      for (const c of this.roadblock) sceneRef.remove(c.mesh);
-      this.roadblock = []; this.roadblockFor = -1;
+    clearRoadblock(sc) {
+      for (const rb of fleet.roadblock) sc.remove(rb.mesh);
+      fleet.roadblock.length = 0;
+      fleet.roadblockFor = -1;
     },
   };
+  return fleet;
 }
 
-export function updatePolicePursuitAI(cops, heli, player, dt, fleet, scene) {
-  const pPos = player.pos;
-  let anySeen = false;
+let strobeClock = 0;
+export function updatePolicePursuitAI(cops, heli, target, dt, fleet, scene) {
+  strobeClock += dt;
+  let seen = false;
+  const tp = target.pos, world = fleet?.world;
+  const physWorld = world || { resolve: (x, z) => [x, z] };
   for (const cop of cops) {
-    const cp = cop.mesh.position;
-    const dist = cp.distanceTo(pPos);
-    if (dist < 95) anySeen = true;
-    // intercept: aim ahead of the player's motion, fall in behind when close
-    const lead = Math.min(1.2, dist / 60);
-    const tx = pPos.x + player.vel.x * lead, tz = pPos.z + player.vel.z * lead;
-    const want = Math.atan2(tx - cp.x, tz - cp.z);
-    let diff = want - cop.heading;
-    while (diff > Math.PI) diff -= Math.PI * 2;
-    while (diff < -Math.PI) diff += Math.PI * 2;
-    const steer = Math.max(-1, Math.min(1, diff * 1.6));
-    const throttle = dist > 7 ? 1 : 0.2;
-    const spd = Math.abs(cop.speed);
-    if (dist < 55 && spd < TUNING.copSpeed) cop.speed += 26 * dt * throttle;
-    cop.speed -= cop.speed * dt * 0.3;
-    cop.heading -= steer * Math.min(1, spd / 10) * 1.7 * dt;
-    cp.x += Math.sin(cop.heading) * cop.speed * dt;
-    cp.z += Math.cos(cop.heading) * cop.speed * dt;
-    cp.x = Math.max(-560, Math.min(1125, cp.x)); cp.z = Math.max(-560, Math.min(560, cp.z));
-    cop.mesh.rotation.y = cop.heading;
-    const spin = cop.speed * dt / 0.42;
-    cop.mesh.userData.wheels.forEach((w) => { w.rotation.z -= spin; });
-    if (cop.mesh.userData.strobe) { // strobe the lightbar
-      const phase = Math.floor(performance.now() / 130) % 2;
-      cop.mesh.userData.strobe.red.color.setHex(phase ? 0xff2438 : 0x57101c);
-      cop.mesh.userData.strobe.blue.color.setHex(phase ? 0x101c57 : 0x2f6bff);
-    }
+    updateStrobes(cop.mesh, strobeClock);
+    if (cop.stolen) continue;
+    const p = cop.mesh.position;
+    const dist = Math.hypot(tp.x - p.x, tp.z - p.z);
+    if (dist < 78) seen = true;
+    const lead = Math.min(0.9, dist / 65);
+    const px = tp.x + (target.vel?.x || 0) * lead, pz = tp.z + (target.vel?.z || 0) * lead;
+    let dh = Math.atan2(px - p.x, pz - p.z) - cop.heading;
+    while (dh > Math.PI) dh -= Math.PI * 2;
+    while (dh < -Math.PI) dh += Math.PI * 2;
+    const cap = TUNING.copSpeed * (0.8 + target.stars * 0.1);
+    updateVehicleArcadePhysics(cop, {
+      throttle: cop.speed < cap ? 1 : 0.15,
+      steer: THREE.MathUtils.clamp(dh * 1.7, -1, 1),
+      handbrake: Math.abs(dh) > 2.3 && cop.speed > 13,
+      nitro: target.stars >= 4 && dist > 55,
+    }, dt, physWorld);
   }
-  if (heli) {
-    const active = player.stars >= TUNING.heliStars;
-    heli.mesh.visible = active;
-    if (active) {
-      heli.angle += dt * 0.55;
-      const hp = heli.mesh.position;
-      hp.x += (pPos.x + Math.sin(heli.angle) * 16 - hp.x) * Math.min(1, dt * 1.6);
-      hp.z += (pPos.z + Math.cos(heli.angle) * 16 - hp.z) * Math.min(1, dt * 1.6);
-      hp.y = 44;
-      heli.mesh.rotation.y = Math.atan2(pPos.x - hp.x, pPos.z - hp.z);
-      heli.rotor.rotation.y += dt * 28;
-      heli.spot.intensity = 900;
-      if (pPos.distanceTo(hp) < 100) anySeen = true;
-    } else heli.spot.intensity = 0;
+  if (fleet) for (const rb of fleet.roadblock) updateStrobes(rb.mesh, strobeClock + 1.7);
+  const u = heli.userData;
+  if (target.stars >= TUNING.heliStars) {
+    heli.visible = true;
+    u.t += dt;
+    const hx = tp.x + Math.sin(u.t * 0.35) * 21, hz = tp.z + Math.cos(u.t * 0.35) * 21;
+    heli.position.x += (hx - heli.position.x) * Math.min(1, dt * 1.6);
+    heli.position.z += (hz - heli.position.z) * Math.min(1, dt * 1.6);
+    heli.position.y += (54 - heli.position.y) * Math.min(1, dt * 1.6);
+    heli.lookAt(tp.x, 0, tp.z);
+    u.rotor.rotation.y += dt * 27;
+    setHeliBeam(heli, tp.x, tp.z, true);
+    if (Math.hypot(heli.position.x - tp.x, heli.position.z - tp.z) < 130) seen = true;
+  } else if (heli.visible) {
+    heli.visible = false;
+    setHeliBeam(heli, 0, 0, false);
   }
-  return anySeen;
+  return seen;
 }

@@ -23,7 +23,8 @@ const rng = createRandom(seed);
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.getElementById('app').appendChild(renderer.domElement);
 
