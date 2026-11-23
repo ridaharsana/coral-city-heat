@@ -34,14 +34,46 @@ export function updateWantedHeatSystem(wanted, events, dt) {
 export function createPoliceFleet(scene) {
   const heliGroup = new THREE.Group();
   const bodyMat = new THREE.MeshLambertMaterial({ color: 0xf0f2f5 });
-  const body = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.7, 7.5), bodyMat); heliGroup.add(body);
-  const tail = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 5.5), bodyMat); tail.position.set(0, 0.3, -6); heliGroup.add(tail);
+  const darkMat = new THREE.MeshLambertMaterial({ color: 0x22242a });
+  // rounded fuselage: a capsule laid along z, glass cockpit bubble, tapered tail boom, skids
+  const fuselage = new THREE.Mesh(new THREE.CapsuleGeometry(1.05, 3.4, 4, 10), bodyMat);
+  fuselage.rotation.x = Math.PI / 2; fuselage.castShadow = true; heliGroup.add(fuselage);
+  const cockpit = new THREE.Mesh(new THREE.SphereGeometry(0.92, 10, 8),
+    new THREE.MeshStandardMaterial({ color: 0x18242f, roughness: 0.12, metalness: 0.8 }));
+  cockpit.scale.set(0.92, 0.78, 1.05); cockpit.position.set(0, 0.22, 2.35); heliGroup.add(cockpit);
+  const boomGeo = new THREE.CylinderGeometry(0.15, 0.36, 5.4, 8); boomGeo.rotateX(Math.PI / 2);
+  const boom = new THREE.Mesh(boomGeo, bodyMat); boom.position.set(0, 0.28, -4.6); heliGroup.add(boom);
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.15, 0.8), darkMat); fin.position.set(0, 0.75, -7.1); heliGroup.add(fin);
+  const tailRotor = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.5, 0.16), darkMat); tailRotor.position.set(0.14, 0.75, -7.1); heliGroup.add(tailRotor);
+  for (const s of [-1, 1]) {
+    const skidGeo = new THREE.CylinderGeometry(0.06, 0.06, 4.6, 6); skidGeo.rotateX(Math.PI / 2);
+    const skid = new THREE.Mesh(skidGeo, darkMat); skid.position.set(s * 0.88, -1.32, 0.2); heliGroup.add(skid);
+    for (const zz of [-1.2, 1.4]) {
+      const strut = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.85, 0.09), darkMat);
+      strut.position.set(s * 0.62, -0.95, zz); strut.rotation.z = s * 0.5; heliGroup.add(strut);
+    }
+  }
+  const stripe = new THREE.Mesh(new THREE.CylinderGeometry(1.07, 1.07, 0.55, 12, 1, true),
+    new THREE.MeshLambertMaterial({ color: 0x1c2f52, side: THREE.DoubleSide }));
+  stripe.rotation.x = Math.PI / 2; stripe.position.z = -0.4; heliGroup.add(stripe);
   const rotorGeo = new THREE.BoxGeometry(11, 0.08, 0.7);
-  const rotor = new THREE.Mesh(rotorGeo, new THREE.MeshLambertMaterial({ color: 0x22242a })); rotor.position.y = 1.15; heliGroup.add(rotor);
-  const stripe = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.5, 7.6), new THREE.MeshLambertMaterial({ color: 0x1c2f52 })); stripe.position.y = -0.3; heliGroup.add(stripe);
-  const coneMat = new THREE.MeshBasicMaterial({ color: 0xfff3b0, transparent: true, opacity: 0.13, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+  const rotor = new THREE.Mesh(rotorGeo, darkMat); rotor.position.y = 1.3; heliGroup.add(rotor);
+  // searchlight: cone with a soft alpha gradient (bright at the lamp, dissolving at the
+  // street) over a bright pool disc that rides on the ground beneath the helicopter
+  const gradC = document.createElement('canvas'); gradC.width = 1; gradC.height = 64;
+  const gg = gradC.getContext('2d'); const grad = gg.createLinearGradient(0, 0, 0, 64);
+  grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.55, '#8a8a8a'); grad.addColorStop(1, '#101010');
+  gg.fillStyle = grad; gg.fillRect(0, 0, 1, 64);
+  const coneMat = new THREE.MeshBasicMaterial({ color: 0xfff3b0, transparent: true, opacity: 0.34, alphaMap: new THREE.CanvasTexture(gradC), blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
   const cone = new THREE.Mesh(new THREE.ConeGeometry(11, 46, 20, 1, true), coneMat);
   cone.position.y = -23.8; heliGroup.add(cone);
+  const poolC = document.createElement('canvas'); poolC.width = poolC.height = 128;
+  const pg = poolC.getContext('2d'); const pgrad = pg.createRadialGradient(64, 64, 4, 64, 64, 62);
+  pgrad.addColorStop(0, 'rgba(255,244,190,0.85)'); pgrad.addColorStop(0.6, 'rgba(255,240,170,0.35)'); pgrad.addColorStop(1, 'rgba(255,240,170,0)');
+  pg.fillStyle = pgrad; pg.fillRect(0, 0, 128, 128);
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(11.5, 24),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(poolC), transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+  pool.rotation.x = -Math.PI / 2; pool.position.y = -43.6; heliGroup.add(pool);
   const spot = new THREE.SpotLight(0xfff3b0, 0, 90, 0.42, 0.5, 0.6);
   spot.position.set(0, 0, 0); heliGroup.add(spot); heliGroup.add(spot.target);
   spot.target.position.set(0, -46, 0);

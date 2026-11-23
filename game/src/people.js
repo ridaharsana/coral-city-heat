@@ -18,23 +18,31 @@ function mat(color) {
   if (!matCache.has(color)) matCache.set(color, new THREE.MeshLambertMaterial({ color }));
   return matCache.get(color);
 }
-function limb(w, h, d, color, px, py, pz) {
-  const geo = new THREE.BoxGeometry(w, h, d); geo.translate(0, -h / 2, 0);
+// a tapered limb segment that pivots at its top: cylinder, slightly narrower at the wrist/ankle
+function limb(rTop, rBot, h, color, px, py, pz) {
+  const geo = new THREE.CylinderGeometry(rTop, rBot, h, 7); geo.translate(0, -h / 2, 0);
   const m = new THREE.Mesh(geo, mat(color)); m.position.set(px, py, pz); m.castShadow = true; return m;
 }
 
 export function createPersonMesh(proto) {
   const g = new THREE.Group();
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.72, 0.34), mat(proto.shirt));
-  torso.position.y = 1.12; torso.castShadow = true; g.add(torso);
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.38, 0.34), mat(proto.skin));
+  // tapered torso: elliptical cylinder, shoulders wider than the waist — no box anywhere
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.21, 0.74, 9), mat(proto.shirt));
+  torso.scale.z = 0.58; torso.position.y = 1.13; torso.castShadow = true; g.add(torso);
+  const pelvis = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 6), mat(proto.pants));
+  pelvis.scale.set(1.05, 0.62, 0.66); pelvis.position.y = 0.78; g.add(pelvis);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.185, 10, 8), mat(proto.skin));
   head.position.y = 1.68; head.castShadow = true; g.add(head);
-  const hair = new THREE.Mesh(new THREE.BoxGeometry(0.37, 0.14, 0.37), mat(proto.hair));
-  hair.position.y = 1.9; g.add(hair);
-  const legL = limb(0.2, 0.78, 0.22, proto.pants, -0.16, 0.78, 0); g.add(legL);
-  const legR = limb(0.2, 0.78, 0.22, proto.pants, 0.16, 0.78, 0); g.add(legR);
-  const armL = limb(0.15, 0.66, 0.17, proto.shirt, -0.4, 1.44, 0); g.add(armL);
-  const armR = limb(0.15, 0.66, 0.17, proto.shirt, 0.4, 1.44, 0); g.add(armR);
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.195, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.52), mat(proto.hair));
+  hair.position.y = 1.715; hair.rotation.x = -0.25; g.add(hair);
+  if (proto.short === 'PALOMA') { // her ponytail: a small tapered cone swept back off the hairline
+    const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.075, 0.42, 6), mat(proto.hair));
+    tail.position.set(0, 1.78, -0.2); tail.rotation.x = 0.7; g.add(tail);
+  }
+  const legL = limb(0.085, 0.06, 0.78, proto.pants, -0.15, 0.78, 0); g.add(legL);
+  const legR = limb(0.085, 0.06, 0.78, proto.pants, 0.15, 0.78, 0); g.add(legR);
+  const armL = limb(0.062, 0.045, 0.66, proto.shirt, -0.38, 1.44, 0); g.add(armL);
+  const armR = limb(0.062, 0.045, 0.66, proto.shirt, 0.38, 1.44, 0); g.add(armR);
   const gun = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.14, 0.62), mat(0x14161c));
   gun.position.set(0, -0.62, 0.2); gun.visible = false; armR.add(gun);
   g.userData = { legL, legR, armL, armR, gun, torso };
