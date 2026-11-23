@@ -1,61 +1,35 @@
-// Every tuning number and colour in one place. The playfield is a fixed 1280x720 logical area;
-// the renderer scales it to the window, so no rule below depends on the screen size.
-
-export const FIELD = { width: 1280, height: 720, groundY: 664 };
-
-/** The simulation's fixed step, in seconds: 60 updates a second whatever the display's rate. */
+// CORAL CITY HEAT — tuning, world dimensions and the five districts of Coral City, Marisol.
+// Everything gameplay-shaping lives here so the other modules stay declarative: district
+// bounds drive ground tints, the minimap and the district title card; TUNING drives vehicle
+// speeds, wanted escalation and mission payouts.
+export const GAME_TITLE = 'CORAL CITY HEAT';
+export const SAVE_KEY = 'coralCityHeatSave';
+export const WORLD_SIZE = 1700;
 export const STEP = 1 / 60;
 
-export const PLAYER = {
-  width: 72,
-  height: 24,
-  speed: 560,
-  invulnerable: 1.5,
+export const DISTRICTS = [
+  { name: 'Coral Beach', sub: 'the neon strip', x0: 130, x1: 470, z0: -560, z1: 560, tint: 0x2e6f79, map: '#2e6f79' },
+  { name: 'Downtown', sub: 'the tower grid', x0: -270, x1: 130, z0: -270, z1: 270, tint: 0x3a3f52, map: '#3a3f52' },
+  { name: 'Port Azahar', sub: 'cranes and cargo', x0: -270, x1: 470, z0: 270, z1: 560, tint: 0x54443a, map: '#54443a' },
+  { name: 'Las Ciénagas', sub: 'the bayou', x0: -560, x1: -270, z0: -560, z1: 560, tint: 0x274435, map: '#274435' },
+  { name: 'Isla Verde', sub: 'across the bridge', x0: 740, x1: 1120, z0: -260, z1: 260, tint: 0x38624a, map: '#38624a' },
+];
+
+export const TUNING = {
+  walkSpeed: 7, sprintSpeed: 12,
+  carAccel: 26, carBrake: 40, carDrag: 0.55, carGrip: 7.5,
+  nitroBoost: 1.65, nitroSeconds: 3.2,
+  wantedDecaySeconds: 26, wantedPerCrime: { shot: 0.34, crash: 0.2, carjack: 0.5, cop: 1.2 },
+  copSpeed: 34, copCountByStars: [0, 0, 2, 3, 4, 6],
+  heliStars: 3, roadblockStars: 4,
+  startCash: 12450,
+  payouts: [400, 1200, 2500, 25000, 250000],
 };
 
-export const LIVES = 3;
+export const RADIO_STATIONS = [
+  { id: 'onda', name: 'ONDA 98.5', tag: 'SYNTH MARISOL', base: 55 },
+  { id: 'roca', name: 'ROCA FM', tag: 'ROCK CLÁSICO', base: 65 },
+  { id: 'fiebre', name: 'FIEBRE 105', tag: 'SALSA Y SOL', base: 73.4 },
+];
 
-export const BLOCK = {
-  minWidth: 40,
-  maxWidth: 110,
-  height: 36,
-  speed: 240,
-  speedPerLevel: 30,
-  speedJitter: 90,
-  interval: 0.55,
-  intervalScale: 0.88,
-  minInterval: 0.14,
-  dodgePoints: 1,
-};
-
-export const COIN = {
-  size: 24,
-  speed: 190,
-  speedPerLevel: 14,
-  interval: 1.4,
-  intervalJitter: 0.8,
-  points: 10,
-};
-
-/** Seconds of play per level, and the last level: speeds and spawn rates stop growing there. */
-export const LEVEL = { seconds: 12, max: 12 };
-
-/** How many falling things can exist at once; the pool is allocated once, at boot. */
-export const POOL_SIZE = 64;
-
-export const PALETTE = {
-  backdrop: '#11141b',
-  sky: '#1b1f2a',
-  ground: '#2a3040',
-  player: '#4fc3f7',
-  block: '#e5534b',
-  coin: '#f2c94c',
-  panel: '#252b38',
-  text: '#eef1f5',
-  muted: '#8b93a3',
-};
-
-export const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
-
-/** Where the best score is kept between visits (this browser only). */
-export const BEST_KEY = 'block-dodger.best';
+export const WEAPONS = ['FISTS', 'PISTOL', 'CARBINE', 'SHOTGUN', 'SMG', 'SNIPER', 'RPG', 'KNIFE'];
