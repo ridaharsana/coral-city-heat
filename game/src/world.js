@@ -49,15 +49,15 @@ function asphaltSet() {
     g.stroke();
   }
   // puddles: slightly dark on the colour map, low roughness on the rough map (damp sheen)
-  for (let i = 0; i < 10; i++) {
-    const x = rnd() * 1024, y = 90 + rnd() * 844, rx = 26 + rnd() * 58, ry = 10 + rnd() * 16;
+  for (let i = 0; i < 16; i++) {
+    const x = rnd() * 1024, y = 90 + rnd() * 844, rx = 44 + rnd() * 76, ry = 14 + rnd() * 22;
     g.save(); g.translate(x, y); g.scale(1, ry / rx); g.translate(-x, -y);
     const gr = g.createRadialGradient(x, y, 2, x, y, rx);
     gr.addColorStop(0, 'rgba(16,20,28,0.5)'); gr.addColorStop(1, 'rgba(16,20,28,0)');
     g.fillStyle = gr; g.beginPath(); g.arc(x, y, rx, 0, 7); g.fill(); g.restore();
     rg.save(); rg.translate(x, y); rg.scale(1, ry / rx); rg.translate(-x, -y);
     const rr = rg.createRadialGradient(x, y, 2, x, y, rx);
-    rr.addColorStop(0, 'rgb(58,58,58)'); rr.addColorStop(0.7, 'rgb(95,95,95)'); rr.addColorStop(1, 'rgb(168,168,168)');
+    rr.addColorStop(0, 'rgb(16,16,16)'); rr.addColorStop(0.7, 'rgb(52,52,52)'); rr.addColorStop(1, 'rgb(168,168,168)');
     rg.fillStyle = rr; rg.beginPath(); rg.arc(x, y, rx, 0, 7); rg.fill(); rg.restore();
   }
   // markings (v axis = across the road): solid edges, dashed lane lines, double yellow centre
@@ -213,28 +213,43 @@ const MOODS = {
 };
 MOODS.evening = MOODS.dusk;
 
+/* ---------------- PMREM neon environment ---------------- */
+// A tiny dedicated env scene (sunset gradient dome, dark ground, a ring of hot neon
+// cards and one warm sunset blaze) run through PMREMGenerator, so car clearcoat,
+// glass and the wet asphalt pick up soft, blurred NEON reflections — not a raw cube.
+export function buildEnvironmentReflections(renderer, scene) {
+  const env = new THREE.Scene();
+  const [c, g] = cnv(64, 256);
+  const gr = g.createLinearGradient(0, 0, 0, 256);
+  gr.addColorStop(0, '#2c2a5e'); gr.addColorStop(0.52, '#a83e70'); gr.addColorStop(0.78, '#ff9e4f'); gr.addColorStop(1, '#171114');
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 256);
+  const domeTex = tex(c); domeTex.wrapS = domeTex.wrapT = THREE.ClampToEdgeWrapping;
+  env.add(new THREE.Mesh(new THREE.SphereGeometry(60, 24, 16), new THREE.MeshBasicMaterial({ map: domeTex, side: THREE.BackSide })));
+  const gnd = new THREE.Mesh(new THREE.CircleGeometry(58, 24), new THREE.MeshBasicMaterial({ color: 0x0b0d13 }));
+  gnd.rotation.x = -Math.PI / 2; gnd.position.y = -3; env.add(gnd);
+  const card = (w, h, x, y, z, rgb) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
+    m.material.color.setRGB(rgb[0], rgb[1], rgb[2]);
+    m.position.set(x, y, z); m.lookAt(0, y, 0); env.add(m);
+  };
+  const NEON = [[11, 0.8, 5.4], [0.6, 8.6, 10], [11, 6.7, 0.6], [9, 1.4, 7], [0.8, 10, 8.3], [10, 5.4, 1.1]];
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2, r = 42;
+    card(7 + (i % 3) * 3, 13 + (i % 4) * 4, Math.cos(a) * r, 7 + (i % 3) * 3, Math.sin(a) * r, NEON[i % NEON.length]);
+  }
+  card(46, 15, -34, 5.5, -21, [12, 8.2, 4.8]); // sunset blaze, toward the mood sun direction
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(env, 0.04).texture;
+  pmrem.dispose();
+}
+
 /* ---------------- the build ---------------- */
 export function buildProceduralCoralCity(scene, rng) {
   const colliders = [];
   const addCollider = (x0, z0, x1, z1) => colliders.push({ x0, z0, x1, z1 });
   const dyn = { winMats: [], lampGlow: null, lampPool: null, water: null, clouds: [], neonSigns: [] };
 
-  // soft studio-sky reflections for paint, glass and wet stone (canvas cube, no network)
-  {
-    const faces = [];
-    for (let i = 0; i < 6; i++) {
-      const [c, g] = cnv(64, 64);
-      const gr = g.createLinearGradient(0, 0, 0, 64);
-      if (i === 2) { gr.addColorStop(0, '#ffe0b0'); gr.addColorStop(1, '#c86a8a'); }
-      else if (i === 3) { gr.addColorStop(0, '#141824'); gr.addColorStop(1, '#0a0c12'); }
-      else { gr.addColorStop(0, '#7a5aa8'); gr.addColorStop(0.55, '#c85a7a'); gr.addColorStop(1, '#ff9e4f'); }
-      g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
-      faces.push(c);
-    }
-    const cube = new THREE.CubeTexture(faces);
-    cube.needsUpdate = true;
-    scene.environment = cube;
-  }
+  // reflections: scene.environment comes from buildEnvironmentReflections (PMREM neon env, main.js)
 
   // sky dome: gradient + sun disc in one shader
   const skyUni = {
@@ -345,8 +360,8 @@ export function buildProceduralCoralCity(scene, rng) {
 
   /* ---- roads: wet asphalt tiles with markings following each segment ---- */
   const asphalt = asphaltSet();
-  const roadMat = new THREE.MeshStandardMaterial({ map: asphalt.map, roughnessMap: asphalt.rough, roughness: 1.0, metalness: 0.32, bumpMap: asphalt.bump, bumpScale: 0.6, envMapIntensity: 0.9 });
-  const plainAsphalt = new THREE.MeshStandardMaterial({ color: 0x2a2b30, roughness: 0.6, metalness: 0.25, envMapIntensity: 0.6 });
+  const roadMat = new THREE.MeshStandardMaterial({ map: asphalt.map, roughnessMap: asphalt.rough, roughness: 1.0, metalness: 0.32, bumpMap: asphalt.bump, bumpScale: 0.6, envMapIntensity: 1.25 });
+  const plainAsphalt = new THREE.MeshStandardMaterial({ color: 0x2a2b30, roughness: 0.6, metalness: 0.25, envMapIntensity: 0.45 });
   function roadStrip(len, wid, x, z, alongX) {
     const geo = new THREE.PlaneGeometry(len, wid);
     const uv = geo.attributes.uv;

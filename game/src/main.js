@@ -7,7 +7,7 @@ import { GAME_TITLE, SAVE_KEY, STEP, TUNING, RADIO_STATIONS, WEAPONS } from './c
 import { createRandom } from './random.js';
 import { createInput } from './input.js';
 import { initProceduralWebAudioEngine } from './audio.js';
-import { buildProceduralCoralCity, districtAt, roadGraph } from './world.js';
+import { buildProceduralCoralCity, buildEnvironmentReflections, districtAt, roadGraph } from './world.js';
 import { createVehicle, createTraffic, updateVehicleArcadePhysics } from './vehicles.js';
 import { PROTAGONISTS, createPersonMesh, createPedestrians, updateThirdPersonCharacter, updateEffects, bindProtagonistSwitch, switchActiveProtagonist } from './people.js';
 import { createWantedState, updateWantedHeatSystem, createPoliceFleet, updatePolicePursuitAI } from './police.js';
@@ -29,6 +29,7 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.getElementById('app').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
+buildEnvironmentReflections(renderer, scene);
 const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 6000);
 camera.position.set(430, 6, -20);
 window.addEventListener('resize', () => {
