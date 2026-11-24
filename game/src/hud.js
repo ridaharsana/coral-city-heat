@@ -152,11 +152,10 @@ export function renderWeaponAndRadioWheel(ctx, state) {
   const cx = W / 2, cy = 218, R = 168;
   g.t('WEAPON / RADIO WHEEL', cx, 34, 'bold 21px Arial', '#ffd23e', 'center');
   for (let i = 0; i < 8; i++) {
-    const a0 = (i / 8) * Math.PI * 2 - Math.PI / 2, a1 = ((i + 1) / 8) * Math.PI * 2 - Math.PI / 2, sel = WEAPONS[i] === state.weapon;
+    const a0 = i * Math.PI / 4 - Math.PI / 2, a1 = a0 + Math.PI / 4, sel = WEAPONS[i] === state.weapon, am = a0 + Math.PI / 8;
     ctx.beginPath(); ctx.arc(cx, cy, R, a0 + 0.03, a1 - 0.03); ctx.arc(cx, cy, R * 0.52, a1 - 0.03, a0 + 0.03, true); ctx.closePath();
     ctx.fillStyle = sel ? 'rgba(255,46,136,0.85)' : 'rgba(38,44,66,0.92)'; ctx.fill();
     ctx.strokeStyle = sel ? '#ffd23e' : 'rgba(255,255,255,0.25)'; ctx.lineWidth = sel ? 3 : 1.5; ctx.stroke();
-    const am = (a0 + a1) / 2;
     g.t(WEAPONS[i], cx + Math.cos(am) * R * 0.76, cy + Math.sin(am) * R * 0.76 + 5, 'bold 14px Arial', '#fff', 'center');
   }
   g.t(state.weapon, cx, cy - 4, 'bold 17px Arial', '#fff', 'center');
