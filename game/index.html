@@ -12,69 +12,57 @@
 <body>
 <div id="app"></div>
 <div id="wantedFlash"></div>
-
 <div id="hud">
-  <div id="alertBar">WANTED — MARISOL SHERIFF</div>
-  <div id="missionBanner"><div id="mbTitle"></div><div id="mbSub"></div></div>
-
-  <div id="telePill"><span class="star">★</span> CORAL CITY HEAT · 60 FPS WEBGL</div>
-
-  <div id="topRight">
-    <div id="stars">☆☆☆☆☆</div>
-    <div id="cashVal">$0</div>
-    <div id="radioPill">♪ RADIO OFF</div>
-    <div id="switchBadge">PALOMA</div>
-    <div id="weaponInfo">FISTS</div>
-  </div>
-
-  <div id="bottomLeft">
-    <canvas id="minimap" width="200" height="200"></canvas>
-    <div id="bars">
-      <div class="bar"><span class="barLabel">HP</span><div class="barTrack"><div id="hpFill" class="barFill hp"></div></div></div>
-      <div class="bar"><span class="barLabel">AR</span><div class="barTrack"><div id="arFill" class="barFill ar"></div></div></div>
-      <div class="bar"><span class="barLabel">ST</span><div class="barTrack"><div id="stFill" class="barFill st"></div></div></div>
-    </div>
-  </div>
-
-  <div id="bottomRight">
-    <div id="objText"></div>
-    <div id="districtCard"><div id="districtName"></div><div id="districtSub"></div></div>
-    <div id="speedo"><span id="speedVal">0</span><span id="mph">MPH</span></div>
-    <div id="gearLine"><span id="gearVal">ON FOOT</span> · <span id="nitroVal"></span></div>
-  </div>
-
-  <div id="subtitle"></div>
-  <div id="prompt"></div>
-  <div id="controlsHint">WASD drive / walk · E enter car · SHIFT sprint · SPACE handbrake · TAB switch · Q wheel · M map · mouse aim, click shoot</div>
+<div id="alertBar">WANTED — MARISOL SHERIFF</div>
+<div id="missionBanner"><div id="mbTitle"></div><div id="mbSub"></div></div>
+<div id="telePill"><span class="star">★</span> CORAL CITY HEAT · 60 FPS WEBGL</div>
+<div id="topRight">
+<div id="stars">☆☆☆☆☆</div>
+<div id="cashVal">$0</div>
+<div id="radioPill">♪ RADIO OFF</div>
+<div id="switchBadge">PALOMA</div>
+<div id="weaponInfo">FISTS</div>
 </div>
-
+<div id="bottomLeft">
+<canvas id="minimap" width="200" height="200"></canvas>
+<div id="bars">
+<div class="bar"><span class="barLabel">HP</span><div class="barTrack"><div id="hpFill" class="barFill hp"></div></div></div>
+<div class="bar"><span class="barLabel">AR</span><div class="barTrack"><div id="arFill" class="barFill ar"></div></div></div>
+<div class="bar"><span class="barLabel">ST</span><div class="barTrack"><div id="stFill" class="barFill st"></div></div></div>
+</div>
+</div>
+<div id="bottomRight">
+<div id="objText"></div>
+<div id="districtCard"><div id="districtName"></div><div id="districtSub"></div></div>
+<div id="speedo"><span id="speedVal">0</span><span id="mph">MPH</span></div>
+<div id="gearLine"><span id="gearVal">ON FOOT</span> · <span id="nitroVal"></span></div>
+</div>
+<div id="subtitle"></div>
+<div id="prompt"></div>
+<div id="controlsHint">WASD drive / walk · E enter car · SHIFT sprint · SPACE handbrake · TAB switch · Q wheel · M map · mouse aim, click shoot</div>
+</div>
 <div id="mapWrap" class="overlay"><canvas id="mapCanvas" width="620" height="640"></canvas></div>
 <div id="wheelWrap" class="overlay"><canvas id="wheelCanvas" width="560" height="640"></canvas></div>
-
 <div id="titleScreen" class="screen">
-  <div class="logoTop">CORAL CITY</div>
-  <div class="logoHeat">HEAT</div>
-  <div class="logoSub">Paloma Reyes &amp; Dario Venn · Coral City, Marisol</div>
-  <div class="pressEnter">PRESS ENTER</div>
-  <div class="titleHelp">An original open-world crime game: five districts, two protagonists,<br>one very interested sheriff. Steal cars, run the chain, clear your heat.</div>
+<div class="logoTop">CORAL CITY</div>
+<div class="logoHeat">HEAT</div>
+<div class="logoSub">Paloma Reyes &amp; Dario Venn · Coral City, Marisol</div>
+<div class="pressEnter">PRESS ENTER</div>
+<div class="titleHelp">An original open-world crime game: five districts, two protagonists,<br>one very interested sheriff. Steal cars, run the chain, clear your heat.</div>
 </div>
-
 <div id="pauseScreen" class="screen hidden">
-  <div class="screenTitle">PAUSED</div>
-  <div class="pressEnter">ENTER / ESC — RESUME</div>
+<div class="screenTitle">PAUSED</div>
+<div class="pressEnter">ENTER / ESC — RESUME</div>
 </div>
-
 <div id="endScreen" class="screen hidden">
-  <div class="screenTitle" id="endTitle">BUSTED</div>
-  <div class="pressEnter">ENTER — BACK ON THE STREET</div>
+<div class="screenTitle" id="endTitle">BUSTED</div>
+<div class="pressEnter">ENTER — BACK ON THE STREET</div>
 </div>
-
 <div id="completeScreen" class="screen hidden">
-  <div class="screenTitle gold">FINAL SCORE COMPLETE</div>
-  <div class="logoSub">Coral City is yours. Free roam — the sheriff never really leaves.</div>
-  <div class="pressEnter">ENTER — KEEP DRIVING</div>
+<div class="screenTitle gold">FINAL SCORE COMPLETE</div>
+<div class="logoSub">Coral City is yours. Free roam — the sheriff never really leaves.</div>
+<div class="pressEnter">ENTER — KEEP DRIVING</div>
 </div>
-
 <p id="status" role="status" aria-live="polite"></p>
 <script type="module" src="./src/main.js"></script>
 </body>
