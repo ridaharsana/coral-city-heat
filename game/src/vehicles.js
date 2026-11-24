@@ -93,7 +93,7 @@ function buildWheel() {
 export function createDetailedVehicleMesh(type, color) {
   const spec = VEHICLE_CATALOG[type] || VEHICLE_CATALOG.sedan;
   const grp = new THREE.Group();
-  const paint = new THREE.MeshPhysicalMaterial({ color: color ?? spec.color, metalness: 0.85, roughness: 0.15, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 1.45 });
+  const paint = new THREE.MeshPhysicalMaterial({ color: color ?? spec.color, metalness: 0.85, roughness: 0.15, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 1.15 });
   const { body, glass, roofPanel } = profiles(type);
   const W = spec.width - 0.18, L = spec.length;
   const bodyMesh = new THREE.Mesh(extrudeProfile(body, W), paint);

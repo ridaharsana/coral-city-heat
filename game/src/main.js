@@ -12,7 +12,7 @@ import { createVehicle, createTraffic, updateVehicleArcadePhysics } from './vehi
 import { PROTAGONISTS, createPersonMesh, createPedestrians, updateThirdPersonCharacter, updateEffects, bindProtagonistSwitch, switchActiveProtagonist } from './people.js';
 import { createWantedState, updateWantedHeatSystem, createPoliceFleet, updatePolicePursuitAI } from './police.js';
 import { MISSIONS, createMissionState, updateActiveMissionState, missionTarget } from './missions.js';
-import { createHud, renderLiveRadarMinimap, renderWeaponAndRadioWheel, renderFullMapOverlay } from './hud.js';
+import { createHud, renderLiveRadarMinimap, renderWeaponAndRadioWheel, renderFullMapOverlay, renderTitleScreen } from './hud.js';
 import { stageShot } from './shots.js';
 
 const params = new URLSearchParams(window.location.search);
@@ -326,6 +326,7 @@ function loop(now) {
 
 // boot
 hud.setCash(game.cash); hud.setSwitch(0); hud.setRadio(RADIO_STATIONS[0]);
+renderTitleScreen();
 if (shotName) {
   showScreen('shot');
   stageShot(shotName, game);

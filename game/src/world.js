@@ -1,9 +1,8 @@
-// CORAL CITY HEAT — world.js: the procedural city. Coral City, Marisol is built from canvas
-// textures and curved geometry only: setback towers with lit-window grids, tube-trunk palms
-// with ribbon fronds, wet asphalt with puddle roughness maps, a gradient sky dome with a sun
-// disc and a distant skyline ring, and landmark buildings (BANCO CORAL, TALLER NEON, the
-// HOTEL MARISOL). The returned world object carries the collision solver every mover shares,
-// the mood system the screenshot scenes grade the light with, and the shadow-follow rig.
+// CORAL CITY HEAT — world.js: the procedural city. Canvas textures and curved geometry
+// only: setback towers, tube-trunk palms, wet asphalt, a golden-hour sky dome with sun disc,
+// and the landmarks (BANCO CORAL, DOCKSIDE CUSTOMS at TALLER NEON, HOTEL MARISOL, the red
+// Marisol Crossing suspension bridge, the pier Ferris wheel). Returns the collision solver,
+// the mood system and the shadow-follow rig every mover shares.
 import * as THREE from 'three';
 import { DISTRICTS as DISTRICT_DEFS } from './config.js';
 
@@ -162,7 +161,7 @@ function skylineTex() {
   let x = 0;
   while (x < 1024) {
     const w = 30 + rnd() * 70, h = 90 + rnd() * 160;
-    g.fillStyle = '#0a0f22'; g.fillRect(x, 256 - h, w, h);
+    g.fillStyle = '#463a55'; g.fillRect(x, 256 - h, w, h);
     const dots = Math.floor(w * h / 260);
     for (let i = 0; i < dots; i++) { g.fillStyle = rnd() < 0.8 ? 'rgba(255,205,130,0.85)' : 'rgba(170,215,255,0.85)'; g.fillRect(x + 3 + rnd() * (w - 6), 256 - h + 4 + rnd() * (h - 10), 2.4, 3.2); }
     x += w + 4 + rnd() * 16;
@@ -205,39 +204,36 @@ const M4 = (x, y, z, ry = 0, s = 1) => {
   return m;
 };
 
-/* ---------------- moods ---------------- */
+/* ---------------- moods: one golden hour ---------------- */
 const MOODS = {
-  sunset: { top: '#2c2a5e', mid: '#a83e70', bot: '#ff9e4f', sun: '#ffc07a', sunI: 2.9, sunDir: [-0.62, 0.17, -0.38], hemiSky: '#8a6bbf', hemiGnd: '#4a3226', hemiI: 0.55, fog: '#dd8a76', fogFar: 2800, lamp: 0.55, pool: 0.10, win: 0.85, amb: 0.22 },
-  dusk: { top: '#1d1b3a', mid: '#5a2a6e', bot: '#d95d6a', sun: '#ff9a5c', sunI: 1.5, sunDir: [-0.7, 0.07, -0.3], hemiSky: '#5a4a8a', hemiGnd: '#2c2226', hemiI: 0.34, fog: '#6a4460', fogFar: 2400, lamp: 0.95, pool: 0.30, win: 1.35, amb: 0.14 },
-  night: { top: '#040814', mid: '#0e1c38', bot: '#1d2f4d', sun: '#8fb4ff', sunI: 0.55, sunDir: [0.3, 0.52, -0.42], hemiSky: '#2c3c5e', hemiGnd: '#0c1018', hemiI: 0.18, fog: '#0a1224', fogFar: 2100, lamp: 1.0, pool: 0.5, win: 1.8, amb: 0.08 },
+  golden: { top: '#46589f', mid: '#e88a6d', bot: '#ffd08a', sun: '#ffdf9e', sunI: 2.7, sunDir: [-0.55, 0.34, -0.35], hemiSky: '#a8c2e8', hemiGnd: '#7a5c40', hemiI: 0.66, fog: '#eda87e', fogFar: 3400, lamp: 0.22, pool: 0.03, win: 0.32, amb: 0.26 },
 };
-MOODS.evening = MOODS.dusk;
 
-/* ---------------- PMREM neon environment ---------------- */
-// A tiny dedicated env scene (sunset gradient dome, dark ground, a ring of hot neon
-// cards and one warm sunset blaze) run through PMREMGenerator, so car clearcoat,
-// glass and the wet asphalt pick up soft, blurred NEON reflections — not a raw cube.
+/* ---------------- PMREM golden environment ---------------- */
+// A tiny dedicated env scene (warm gradient dome, ground, a ring of warm sky cards and one
+// hot sun card) run through PMREMGenerator, so clearcoat, glass and water pick up soft
+// golden-hour reflections.
 export function buildEnvironmentReflections(renderer, scene) {
   const env = new THREE.Scene();
   const [c, g] = cnv(64, 256);
   const gr = g.createLinearGradient(0, 0, 0, 256);
-  gr.addColorStop(0, '#2c2a5e'); gr.addColorStop(0.52, '#a83e70'); gr.addColorStop(0.78, '#ff9e4f'); gr.addColorStop(1, '#171114');
+  gr.addColorStop(0, '#46589f'); gr.addColorStop(0.52, '#e2707a'); gr.addColorStop(0.78, '#ffc36b'); gr.addColorStop(1, '#4a3220');
   g.fillStyle = gr; g.fillRect(0, 0, 64, 256);
   const domeTex = tex(c); domeTex.wrapS = domeTex.wrapT = THREE.ClampToEdgeWrapping;
   env.add(new THREE.Mesh(new THREE.SphereGeometry(60, 24, 16), new THREE.MeshBasicMaterial({ map: domeTex, side: THREE.BackSide })));
-  const gnd = new THREE.Mesh(new THREE.CircleGeometry(58, 24), new THREE.MeshBasicMaterial({ color: 0x0b0d13 }));
+  const gnd = new THREE.Mesh(new THREE.CircleGeometry(58, 24), new THREE.MeshBasicMaterial({ color: 0x2a1c12 }));
   gnd.rotation.x = -Math.PI / 2; gnd.position.y = -3; env.add(gnd);
   const card = (w, h, x, y, z, rgb) => {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
     m.material.color.setRGB(rgb[0], rgb[1], rgb[2]);
     m.position.set(x, y, z); m.lookAt(0, y, 0); env.add(m);
   };
-  const NEON = [[11, 0.8, 5.4], [0.6, 8.6, 10], [11, 6.7, 0.6], [9, 1.4, 7], [0.8, 10, 8.3], [10, 5.4, 1.1]];
-  for (let i = 0; i < 12; i++) {
-    const a = (i / 12) * Math.PI * 2, r = 42;
-    card(7 + (i % 3) * 3, 13 + (i % 4) * 4, Math.cos(a) * r, 7 + (i % 3) * 3, Math.sin(a) * r, NEON[i % NEON.length]);
+  const WARM = [[12, 9, 5], [11, 7, 4], [9, 8, 7], [12, 6, 3], [7, 8, 10], [10, 5, 4]];
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2, r = 42;
+    card(8 + (i % 3) * 3, 14 + (i % 4) * 4, Math.cos(a) * r, 8 + (i % 3) * 3, Math.sin(a) * r, WARM[i % WARM.length]);
   }
-  card(46, 15, -34, 5.5, -21, [12, 8.2, 4.8]); // sunset blaze, toward the mood sun direction
+  card(46, 16, -34, 6, -21, [13, 9.5, 5.5]); // sun blaze, toward the mood sun direction
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(env, 0.04).texture;
   pmrem.dispose();
@@ -247,7 +243,7 @@ export function buildEnvironmentReflections(renderer, scene) {
 export function buildProceduralCoralCity(scene, rng) {
   const colliders = [];
   const addCollider = (x0, z0, x1, z1) => colliders.push({ x0, z0, x1, z1 });
-  const dyn = { winMats: [], lampGlow: null, lampPool: null, water: null, clouds: [], neonSigns: [] };
+  const dyn = { winMats: [], lampGlow: null, lampPool: null, water: null, clouds: [], neonSigns: [], spinners: [], blimp: null };
 
   // reflections: scene.environment comes from buildEnvironmentReflections (PMREM neon env, main.js)
 
@@ -360,7 +356,7 @@ export function buildProceduralCoralCity(scene, rng) {
 
   /* ---- roads: wet asphalt tiles with markings following each segment ---- */
   const asphalt = asphaltSet();
-  const roadMat = new THREE.MeshStandardMaterial({ map: asphalt.map, roughnessMap: asphalt.rough, roughness: 1.0, metalness: 0.32, bumpMap: asphalt.bump, bumpScale: 0.6, envMapIntensity: 1.25 });
+  const roadMat = new THREE.MeshStandardMaterial({ color: 0xd9d3cb, map: asphalt.map, roughnessMap: asphalt.rough, roughness: 1.0, metalness: 0.32, bumpMap: asphalt.bump, bumpScale: 0.6, envMapIntensity: 0.75 });
   const plainAsphalt = new THREE.MeshStandardMaterial({ color: 0x2a2b30, roughness: 0.6, metalness: 0.25, envMapIntensity: 0.45 });
   function roadStrip(len, wid, x, z, alongX) {
     const geo = new THREE.PlaneGeometry(len, wid);
@@ -460,13 +456,9 @@ export function buildProceduralCoralCity(scene, rng) {
       }
       if (h > 52 && rng.chance(0.6)) { // water tower
         const wt = new THREE.Group(); wt.position.set(rng.range(-w / 5, w / 5), h + 0.7, rng.range(-d / 5, d / 5));
-        const tank = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.3, 4.4, 12), groundMat(0x7a5c40, 0.9));
-        tank.position.y = 4.4; tank.castShadow = true; wt.add(tank);
-        const cone = new THREE.Mesh(new THREE.ConeGeometry(2.7, 1.8, 12), roofMat); cone.position.y = 7.5; wt.add(cone);
-        for (const [lx, lz] of [[-1.7, -1.7], [1.7, -1.7], [-1.7, 1.7], [1.7, 1.7]]) {
-          const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 2.4, 6), roofMat);
-          leg.position.set(lx, 1.2, lz); wt.add(leg);
-        }
+        const tank = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.3, 4.4, 10), groundMat(0x7a5c40, 0.9));
+        tank.position.y = 4.2; tank.castShadow = true; wt.add(tank);
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(2.7, 1.8, 10), roofMat); cone.position.y = 7.2; wt.add(cone);
         grp.add(wt);
       }
     }
@@ -581,23 +573,28 @@ export function buildProceduralCoralCity(scene, rng) {
     addCollider(BANK_POS.x - 23, BANK_POS.z - 11, BANK_POS.x + 23, BANK_POS.z + 11);
     addCollider(BANK_POS.x - 21, BANK_POS.faceZ - 4, BANK_POS.x + 21, BANK_POS.faceZ - 2.4);
   }
-  // TALLER NEON: open-front respray garage in Port Azahar
+  // DOCKSIDE CUSTOMS at TALLER NEON: a real open-front workshop in Port Azahar — back and
+  // side walls, roof, a yellow 2-post hydraulic lift, tool wall, tire stack, work light and
+  // an interior neon sign, so the garage screenshot stages inside it.
   {
     const g = new THREE.Group(); g.position.set(GARAGE_POS.x, 0, GARAGE_POS.z);
-    const shell = new THREE.Mesh(new THREE.BoxGeometry(38, 9.5, 16), groundMat(0x4c5661, 0.8));
-    shell.position.y = 4.75; shell.castShadow = true; shell.receiveShadow = true; g.add(shell);
-    const mouth = new THREE.Mesh(new THREE.BoxGeometry(19, 6.4, 0.6), new THREE.MeshStandardMaterial({ color: 0x120e0a, roughness: 1 }));
-    mouth.position.set(-4, 3.2, 8.1); g.add(mouth);
-    const innerGlow = new THREE.Mesh(new THREE.PlaneGeometry(17, 5.4), new THREE.MeshBasicMaterial({ color: 0xff9a4d }));
-    innerGlow.position.set(-4, 3.1, 7.75); innerGlow.rotation.y = Math.PI; g.add(innerGlow);
-    const lift = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.5, 3), groundMat(0x22262c, 0.5));
-    lift.position.set(-4, 0.9, 6.4); g.add(lift);
-    for (const px of [-7.4, -0.6]) {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.6, 0.5), groundMat(0xb8862e, 0.5));
-      post.position.set(px, 0.8, 6.4); g.add(post);
-    }
-    const shutter = new THREE.Mesh(new THREE.BoxGeometry(12, 6.4, 0.4), groundMat(0x707880, 0.55));
-    shutter.position.set(11.5, 3.2, 8.1); g.add(shutter);
+    const wallM = groundMat(0x59636e, 0.85), darkM = groundMat(0x22262c, 0.6);
+    const wall = (w, h, d, x, y, z, mat = wallM) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; g.add(m); return m; };
+    wall(38, 9.5, 0.6, 0, 4.75, -8); // back
+    wall(0.6, 9.5, 16, -19, 4.75, 0); wall(0.6, 9.5, 16, 19, 4.75, 0); // sides
+    wall(38, 0.6, 16.6, 0, 9.5, 0); // roof
+    wall(38, 0.15, 16, 0, 0.07, 0, groundMat(0x3a3f46, 0.7)); // floor slab
+    const liftM = groundMat(0xd8a018, 0.45);
+    for (const px of [-8.4, 0.4]) wall(0.55, 3.4, 0.55, px, 1.7, 0, liftM); // lift posts
+    wall(9.4, 0.4, 0.5, -4, 3.35, 0, liftM); // crossbar
+    wall(7.6, 0.28, 3.2, -4, 0.92, 0, darkM); // platform — a raised car sits at y ≈ 1.06
+    wall(11, 3.4, 0.4, -11.5, 1.7, -7.6, groundMat(0x7a2e2e, 0.6)); // tool wall
+    wall(5, 2.2, 1.1, -13.5, 1.1, -7.2, groundMat(0x2e4a68, 0.6)); // parts cabinet
+    for (let i = 0; i < 3; i++) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.52, 0.19, 8, 16), darkM); t.rotation.x = Math.PI / 2; t.position.set(-14.5, 0.22 + i * 0.4, -4.5); t.castShadow = true; g.add(t); }
+    for (const lx of [-9, 1]) { const strip = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.12, 0.5), new THREE.MeshBasicMaterial({ color: 0xffe2b0 })); strip.position.set(lx, 9.1, 1); g.add(strip); }
+    const workLight = new THREE.PointLight(0xffc98a, 500, 46, 1.8); workLight.position.set(0, 7.4, 2); g.add(workLight);
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(16, 2.3), new THREE.MeshBasicMaterial({ map: signTex('DOCKSIDE CUSTOMS', '#00f0ff'), transparent: true }));
+    sign.position.set(-4, 6.9, -7.65); g.add(sign);
     scene.add(g);
     signPlane('TALLER NEON', '#00f0ff', 20, 3, GARAGE_POS.x - 4, 8.6, GARAGE_POS.faceZ + 0.7, 0, false, 'RESPRAY · TUNING · ARMOR');
     addCollider(GARAGE_POS.x - 19, GARAGE_POS.z - 8, GARAGE_POS.x + 19, GARAGE_POS.z + 8);
@@ -646,6 +643,84 @@ export function buildProceduralCoralCity(scene, rng) {
     neonGlow(1106, 19.6, 214, 0xffe9a8, 13, 0.5);
     addCollider(1102, 210, 1110, 218);
   }
+
+  // Marisol Crossing dressed as a red suspension bridge: twin towers + catenary cables
+  {
+    const red = groundMat(0xc23a22, 0.55);
+    for (const tx of [520, 680]) for (const sgn of [-1, 1]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(1.7, 27, 1.7), red);
+      leg.position.set(tx, 13.5, BRIDGE_Z + sgn * 9.2); leg.castShadow = true; scene.add(leg);
+      const beam = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.4, 20), red);
+      beam.position.set(tx, 25.8, BRIDGE_Z); scene.add(beam);
+      const beam2 = beam.clone(); beam2.position.y = 12; scene.add(beam2);
+    }
+    for (const sgn of [-1, 1]) {
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(455, 8.5, BRIDGE_Z + sgn * 9.2), new THREE.Vector3(520, 26.4, BRIDGE_Z + sgn * 9.2),
+        new THREE.Vector3(600, 10.5, BRIDGE_Z + sgn * 9.2), new THREE.Vector3(680, 26.4, BRIDGE_Z + sgn * 9.2),
+        new THREE.Vector3(738, 8.5, BRIDGE_Z + sgn * 9.2)]);
+      const cable = new THREE.Mesh(new THREE.TubeGeometry(curve, 32, 0.22, 6), red);
+      scene.add(cable);
+    }
+  }
+  // pier + Ferris wheel on the Coral Beach shore at z = -40
+  {
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(96, 1, 13), groundMat(0x8a6f4d, 0.9));
+    deck.position.set(500, 0.1, -40); deck.receiveShadow = true; scene.add(deck);
+    for (let px = 462; px <= 540; px += 13) for (const pz of [-45.5, -34.5]) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 3.4, 8), groundMat(0x5d4630, 0.95));
+      post.position.set(px, -1.4, pz); scene.add(post);
+    }
+    const wheel = new THREE.Group(); wheel.position.set(534, 15.5, -40); wheel.rotation.y = Math.PI / 2;
+    const spin = new THREE.Group(); wheel.add(spin);
+    const rimM = groundMat(0xe8e4da, 0.4);
+    for (const r of [13, 9.5]) { const rim = new THREE.Mesh(new THREE.TorusGeometry(r, 0.32, 8, 36), rimM); spin.add(rim); }
+    const GOND = [0xff5fa2, 0xffb800, 0x37e0ff, 0xff6b35, 0x57e389, 0xc04df0, 0xff4757, 0x7be495];
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 13, 6), rimM);
+      spoke.position.set(Math.cos(a) * 6.5, Math.sin(a) * 6.5, 0); spoke.rotation.z = a + Math.PI / 2; spin.add(spoke);
+      const gon = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.7, 1.8), groundMat(GOND[i], 0.5));
+      gon.position.set(Math.cos(a) * 13, Math.sin(a) * 13, 0); gon.castShadow = true; spin.add(gon);
+    }
+    const hub = new THREE.Mesh(new THREE.SphereGeometry(1.1, 12, 10), groundMat(0xc23a22, 0.4)); spin.add(hub);
+    for (const sgn of [-1, 1]) {
+      const legA = new THREE.Mesh(new THREE.BoxGeometry(0.7, 17.5, 0.7), groundMat(0x59636e, 0.6));
+      legA.position.set(sgn * 4.6, -8.2, 0); legA.rotation.z = sgn * 0.27; wheel.add(legA);
+    }
+    scene.add(wheel); dyn.spinners.push(spin);
+    addCollider(524, -48, 544, -32);
+  }
+  // blimp drifting over the bay
+  {
+    const blimp = new THREE.Group(); blimp.position.set(300, 110, -150);
+    const body = new THREE.Mesh(new THREE.SphereGeometry(3.4, 18, 12), groundMat(0xd84a5e, 0.35));
+    body.scale.set(4.2, 1.22, 1.22); body.castShadow = true; blimp.add(body);
+    const stripe = new THREE.Mesh(new THREE.SphereGeometry(3.42, 18, 8), groundMat(0xf2e8ee, 0.4));
+    stripe.scale.set(4.2, 0.5, 1.22); blimp.add(stripe);
+    for (const sgn of [-1, 1]) { const fin = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.18, 1.6), groundMat(0x27364f, 0.5)); fin.position.set(-13.2, sgn * 1.4, 0); fin.rotation.z = sgn * 0.5; blimp.add(fin); }
+    const cab = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1, 1.4), groundMat(0x27364f, 0.5)); cab.position.set(1.5, -4.1, 0); blimp.add(cab);
+    scene.add(blimp); dyn.blimp = blimp;
+  }
+  // beach umbrellas along the sand
+  {
+    const UMB = [0xff5fa2, 0xffb800, 0x37e0ff, 0xff6b35, 0x57e389, 0xc04df0];
+    let ui = 0;
+    for (let z = -520; z <= 520; z += 62) for (const ux of [443, 456]) {
+      if (Math.abs(z - (-40)) < 16 && ux === 456) continue; // keep the pier clear
+      const u = new THREE.Group(); u.position.set(ux + (ui % 3), 0, z + (ui % 5) * 3);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.3, 6), groundMat(0xe8e4da, 0.5));
+      pole.position.y = 1.15; u.add(pole);
+      const top = new THREE.Mesh(new THREE.ConeGeometry(1.6, 0.55, 10), groundMat(UMB[ui % UMB.length], 0.7));
+      top.position.y = 2.35; top.castShadow = true; u.add(top);
+      scene.add(u); ui++;
+    }
+  }
+  // ground-floor storefront signs on the Ocean Drive hotel row (faces east, +x)
+  signPlane('BODEGA DEL SOL', '#ffd23e', 15, 2.6, 361, 5, 88, Math.PI / 2);
+  neonGlow(362, 5, 88, 0xffd23e, 9, 0.3);
+  signPlane('MANGO & RYE', '#7be495', 13, 2.6, 361, 5, 147, Math.PI / 2);
+  neonGlow(362, 5, 147, 0x7be495, 9, 0.3);
 
   /* ---- palms: TubeGeometry trunks bent on a curve, ribbon fronds ---- */
   const barkMat = new THREE.MeshStandardMaterial({ map: barkTex(), roughness: 1 });
@@ -755,7 +830,7 @@ export function buildProceduralCoralCity(scene, rng) {
   /* ---- moods, shadow follow, per-frame life ---- */
   let sunDirV = new THREE.Vector3(-0.62, 0.17, -0.38).normalize();
   function setMood(name) {
-    const m = MOODS[name] || MOODS.sunset;
+    const m = MOODS[name] || MOODS.golden;
     skyUni.topColor.value.set(m.top); skyUni.midColor.value.set(m.mid); skyUni.botColor.value.set(m.bot);
     skyUni.sunColor.value.set(m.sun); skyUni.sunDir.value.set(...m.sunDir).normalize();
     sunDirV = new THREE.Vector3(...m.sunDir).normalize();
@@ -775,6 +850,8 @@ export function buildProceduralCoralCity(scene, rng) {
   function update(dt, t) {
     if (dyn.water && dyn.water.alphaMap) { dyn.water.alphaMap.offset.x = t * 0.008; dyn.water.alphaMap.offset.y = Math.sin(t * 0.3) * 0.02; }
     for (const c of dyn.clouds) { c.position.x += dt * 1.4; if (c.position.x > 2100) c.position.x = -1600; }
+    for (const s of dyn.spinners) s.rotation.z += dt * 0.12;
+    if (dyn.blimp) { dyn.blimp.position.x += dt * 2.4; if (dyn.blimp.position.x > 1500) dyn.blimp.position.x = -1300; }
   }
   function resolve(x, z, r) {
     for (const c of colliders) {
@@ -786,7 +863,7 @@ export function buildProceduralCoralCity(scene, rng) {
     }
     return [Math.max(-584, Math.min(1144, x)), Math.max(-584, Math.min(584, z))];
   }
-  setMood('sunset');
+  setMood('golden');
   followShadow(390, -60);
   return { update, followShadow, setMood, resolve, colliders, avenues: AVENUES, streets: STREETS, sun, hemi };
 }
