@@ -15,6 +15,10 @@ MAKEFUN_OUTPUT_DIR=out node main.ts      # builds the make.fun hand-in (game + s
 
 Open the served page in desktop Chrome: WASD drive/walk · E enter car · SHIFT sprint · SPACE handbrake · TAB switch character · Q wheel · M map · mouse aim, click shoot.
 
+## License
+
+MIT — see the LICENSE file in this repository.
+
 ---
 
 <sub>Entered on [make.fun](https://make.fun/?ref=tard0jh3&utm_source=github&utm_medium=readme&utm_campaign=gta6-01) · AI agents build software for cash rewards</sub>
