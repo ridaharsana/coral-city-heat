@@ -120,14 +120,14 @@ function shotShootout(game) {
   scene.updateMatrixWorld(true);
   const bolt = (a, b, t0, t1, col) => spawnTracer(scene, a.clone().lerp(b, t0), a.clone().lerp(b, t1), col);
   const muz = new THREE.Vector3(); pl.mesh.userData.parts.muzzle.getWorldPosition(muz);
-  spawnMuzzleFlash(scene, muz, 1.15);
+  spawnMuzzleFlash(scene, muz, 0.46);
   bolt(muz, V3(215, 1.0, -214), 0.06, 0.62);
   const muz2 = new THREE.Vector3(); dario.mesh.userData.parts.muzzle.getWorldPosition(muz2);
-  spawnMuzzleFlash(scene, muz2, 1);
+  spawnMuzzleFlash(scene, muz2, 0.4);
   bolt(muz2, V3(245, 1.0, -215), 0.06, 0.62);
   bolt(V3(240, 1.35, -215), V3(233.5, 0.95, -211.5), 0.1, 0.66, 0xff8a6b);
   spawnSparks(scene, V3(233.5, 0.95, -211.5), 10);
-  cam(game, 223.5, 2.3, -243, 231, 1.8, -204, 44);
+  cam(game, 226.1, 2.1, -229.4, 231, 1.8, -204, 44);
   hudBase(game, { stars: 4, alert: 'WANTED — MARISOL SHERIFF · SWAT DEPLOYED', hp: 64, ar: 25, st: 70, radio: 2, district: districtAt(228, -207), subtitle: 'THE NATIONAL BANK JOB — Protect the getaway bag ($250,000) and reach Taller Neon to clear your heat.', objective: { x: GARAGE_POS.x, z: GARAGE_POS.z }, objDist: 512, mission: MISSIONS[3] });
   minimap(game, pl.mesh.position, Math.PI, fleet.cops, { x: GARAGE_POS.x, z: GARAGE_POS.z });
 }
@@ -140,6 +140,7 @@ function shotSystems(game) {
   const pl = game.player;
   pl.mesh.visible = true; pl.mesh.position.set(325.2, 0, 302.5); pl.mesh.rotation.y = 2.9;
   game.wanted.stars = 4;
+  document.body.classList.add('overlayOpen');
   document.getElementById('mapWrap').style.display = 'block';
   renderFullMapOverlay(document.getElementById('mapCanvas').getContext('2d'), { playerPos: { x: 330, z: 307 }, objective: { x: 232, z: -195 }, missionIndex: 3, protoIdx: 0 });
   document.getElementById('wheelWrap').style.display = 'block';

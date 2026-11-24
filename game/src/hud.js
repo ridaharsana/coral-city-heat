@@ -179,6 +179,26 @@ export function renderFullMapOverlay(ctx, state) {
   ctx.strokeStyle = 'rgba(230,236,244,0.6)'; ctx.lineWidth = 2;
   for (const z of AVENUES) { ctx.beginPath(); ctx.moveTo(sx(-560), sz(z)); ctx.lineTo(sx(1130), sz(z)); ctx.stroke(); }
   for (const x of STREETS) { ctx.beginPath(); ctx.moveTo(sx(x), sz(-560)); ctx.lineTo(sx(x), sz(560)); ctx.stroke(); }
+  // coastline: curved shore down the east edge (bay bite off Coral Beach) and along the south
+  ctx.strokeStyle = 'rgba(159,216,239,0.9)'; ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(sx(470), sz(-560));
+  ctx.quadraticCurveTo(sx(428), sz(-150), sx(452), sz(20));
+  ctx.quadraticCurveTo(sx(480), sz(250), sx(470), sz(560));
+  ctx.quadraticCurveTo(sx(120), sz(598), sx(-270), sz(560));
+  ctx.stroke();
+  ctx.beginPath(); ctx.roundRect(sx(740) - 5, sz(-260) - 5, sx(1120) - sx(740) + 10, sz(260) - sz(-260) + 10, 14); ctx.stroke();
+  // twin bridges out to Isla Verde
+  ctx.strokeStyle = '#e8ecf4'; ctx.lineWidth = 3.5;
+  for (const bz of [-120, 120]) { ctx.beginPath(); ctx.moveTo(sx(470), sz(bz)); ctx.lineTo(sx(740), sz(bz)); ctx.stroke(); }
+  // one glowing pin per district, just above its label
+  const PINS = [['#ff5fa2', 300, 0], ['#ffd23e', -70, 0], ['#ff8a3c', 100, 415], ['#57e389', -415, 0], ['#37e0ff', 930, 0]];
+  for (const [col, px, pz] of PINS) {
+    const X = sx(px), Y = sz(pz) - 16;
+    ctx.fillStyle = col + '55'; ctx.beginPath(); ctx.arc(X, Y, 10, 0, 7); ctx.fill();
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X, Y, 4.5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(X, Y, 1.8, 0, 7); ctx.fill();
+  }
   if (state.objective) {
     ctx.fillStyle = '#ffd23e'; ctx.beginPath(); ctx.arc(sx(state.objective.x), sz(state.objective.z), 6, 0, 7); ctx.fill();
   }

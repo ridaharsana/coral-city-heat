@@ -302,6 +302,7 @@ function loop(now) {
     }
     game.wheelOpen = input.actionWheel();
     $('wheelWrap').style.display = game.wheelOpen ? 'block' : 'none';
+    document.body.classList.toggle('overlayOpen', game.mapOpen || game.wheelOpen);
     if (game.wheelOpen) {
       renderWeaponAndRadioWheel($('wheelCanvas').getContext('2d'), { weapon: game.player.weapon, ammo: '30 / 210', radio: RADIO_STATIONS[game.radioIdx] });
       for (let i = 0; i < 8; i++) if (input.hit('Digit' + (i + 1))) game.player.weapon = WEAPONS[i];
